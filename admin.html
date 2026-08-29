@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orders — Kashidakari Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700&family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet">
+<style>
+  body{ font-family:'Mukta',sans-serif; background:#FAF6EE; color:#2E3148; margin:0; padding:30px; }
+  h1{ font-family:'Cormorant Garamond',serif; }
+  table{ width:100%; border-collapse: collapse; background:#fff; border-radius:6px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,.06);}
+  th, td{ padding:12px 14px; border-bottom:1px solid #eee; text-align:left; font-size:.9rem; vertical-align: top;}
+  th{ background:#2E3148; color:#fff; }
+  select{ padding:4px 8px; border-radius:4px; }
+  .refresh{ margin-bottom:16px; padding:8px 16px; border:none; background:#A65763; color:#fff; border-radius:6px; cursor:pointer; }
+  .empty{ padding:20px; text-align:center; color:#777; }
+</style>
+</head>
+<body>
+  <h1>Kashidakari — Aaye hue Orders</h1>
+  <button class="refresh" onclick="loadOrders()">🔄 Refresh</button>
+  <div id="ordersWrap">Load ho raha hai...</div>
+
+<script>
+async function loadOrders(){
+  const wrap = document.getElementById('ordersWrap');
+  wrap.textContent = 'Load ho raha hai...';
+  const res = await fetch('/api/orders');
+  const data = await res.json();
+  if(!data.orders || data.orders.length === 0){
+    wrap.innerHTML = '<p class="empty">Abhi tak koi order nahi aaya.</p>';
+    return;
+  }
+  let html = `<table><tr><th>Time</th><th>Naam</th><th>Phone</th><th>Address</th><th>Items</th><th>Note</th><th>Status</th></tr>`;
+  data.orders.forEach(o => {
+    const time = new Date(o.createdAt).toLocaleString('en-IN');
+    html += `<tr>
+      <td>${time}</td>
+      <td>${o.name}</td>
+      <td><a href="tel:${o.phone}">${o.phone}</a></td>
+      <td>${o.address || '-'}</td>
+      <td>${o.items.join(', ')}</td>
+      <td>${o.notes || '-'}</td>
+      <td>
+        <select onchange="updateStatus('${o.id}', this.value)">
+          <option ${o.status==='New'?'selected':''}>New</option>
+          <option ${o.status==='Confirmed'?'selected':''}>Confirmed</option>
+          <option ${o.status==='Delivered'?'selected':''}>Delivered</option>
+        </select>
+      </td>
+    </tr>`;
+  });
+  html += `</table>`;
+  wrap.innerHTML = html;
+}
+
+async function updateStatus(id, status){
+  await fetch('/api/orders/' + id, {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({status})
+  });
+}
+
+loadOrders();
+</script>
+</body>
+</html>
